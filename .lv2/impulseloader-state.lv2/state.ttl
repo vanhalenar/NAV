@@ -1,0 +1,10 @@
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix pset:  <http://lv2plug.in/ns/ext/presets#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+
+<urn:brummer:impulseloader-default-state>
+    a pset:Preset ;
+    state:state [
+        <urn:brummer:ImpulseLoader#irfile>
+            <file:///home/tymo/cabs/IR-SM57-V30-4-Raw.wav>
+    ] .

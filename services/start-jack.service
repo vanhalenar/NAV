@@ -1,0 +1,21 @@
+# A systemd service file that will be responsible for starting jack once audio is initialized
+[Unit]
+After=sound.target
+Description=Starts jack when audio is ready on the system
+
+[Service]
+Type=simple
+User=tymo
+Group=audio
+Environment="JACK_NO_AUDIO_RESERVATION=1"
+LimitRTPRIO=99
+LimitMEMLOCK=infinity
+ExecStart=/usr/bin/bash /home/tymo/.jackdrc
+
+ExecStartPost=/usr/bin/jack_wait -w -t 10
+Restart=on-failure
+TimeoutSec=30
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,16 @@
+[Unit]
+Description=After NAM and IR have started, this will be launched
+After=start-nam.service
+After=start-ir.service
+
+[Service]
+Type=simple
+User=tymo
+Group=audio
+CapabilityBoundingSet=CAP_SYS_NICE
+AmbientCapabilities=CAP_SYS_NICE
+ExecStart=/usr/bin/bash /home/tymo/post-jalv.sh
+
+[Install]
+WantedBy=multi-user.target
+

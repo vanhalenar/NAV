@@ -1,0 +1,10 @@
+@prefix lv2:  <http://lv2plug.in/ns/lv2core#> .
+@prefix pset: <http://lv2plug.in/ns/ext/presets#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+
+<urn:nam:mesa>
+    a pset:Preset ;
+    lv2:appliesTo <http://github.com/mikeoliphant/neural-amp-modeler-lv2> ;
+    rdfs:label "Mesa" ;
+    rdfs:seeAlso <state.ttl> .
