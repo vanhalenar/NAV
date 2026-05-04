@@ -1,0 +1,1 @@
+/usr/bin/jackd -R -P95 -d alsa -d hw:USB -r 48000 -p 128 -n 3 -i 2 -o 2

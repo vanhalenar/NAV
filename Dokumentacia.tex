@@ -1,0 +1,91 @@
+\documentclass{article}
+
+% Language setting
+% Replace `english' with e.g. `spanish' to change the document language
+\usepackage[slovak]{babel}
+
+% Set page size and margins
+% Replace `letterpaper' with `a4paper' for UK/EU standard size
+\usepackage[letterpaper,top=2cm,bottom=2cm,left=1cm,right=1cm,marginparwidth=1.75cm]{geometry}
+
+\usepackage{tabularx}
+\usepackage{enumitem}
+
+\setlist[description]{
+    font=\bfseries,
+    labelwidth=4cm,
+    leftmargin=4.8cm,
+    labelsep=0.5em,
+    style=unboxed,
+    itemindent=0pt,
+}
+
+% Useful packages
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+
+\title{Gitarový multiefekt na platforme Raspberry Pi 5 - dokumentácia}
+\author{Timotej Halenár}
+
+\begin{document}
+\maketitle
+
+\section{Úvod}
+V rámci projektu do predmetu NAV som vytvoril gitarový multiefekt na báze Raspberry Pi 5. K Raspberry Pi je možné pripojiť USB MIDI nožný prepínač, ktorým sa dajú prepínať presety (výber dalšieho/predošlého z banky presetov), a na ktorého displeji sa zobrazuje názov aktuálne zvoleného zvuku. Ďalej sa dá pomocou prepínača úplne vypnúť/zapnúť zvukový výstup (užitočné pri ladení), a ďalšie funkcie sú možné. Ako zvukové I/O zariadenie sa dá použiť ľubovoľná zvuková karta, či už ide o USB zariadenie alebo Raspberry Pi HAT zariadenie.
+
+\section{Použitý hardware}
+
+Riešenie obsahuje nasledujúce hardwarové prvky:
+\begin{itemize}
+    \item Raspberry Pi 5
+    \item Focusrite Scarlett Solo 3rd gen (zvuková karta)
+    \item USB MIDI nožný prepínač na báze Teensy 4.0 (vytvorený v rámci predošlého projektu)
+\end{itemize}
+
+\section{Software}
+Pri zapojení do elektriny sa Raspberry Pi zapne a inicializuje sa software. Pre každý softwarový komponent som vytvoril \texttt{systemd service} jednotku, ktorá automaticky spustí potrebný program. \texttt{systemd} umožňuje vytvárať aj závislosti medzi jednotkami, pre odolnosť systému je ale lepšie spoliehať sa na artefakty, ktoré daný program vytvorí, nie na stav \texttt{systemd service} jednotky.
+
+\subsection{JACK audio connection kit}
+JACK\footnote{\url{https://jackaudio.org/}} je zvukový server, ktorý umožňuje jednoducho vytvárať zvukové prepojenia a smerovať zvukový signál. Je to prvá aplikácia, ktorá je na RPi spustená, stará sa o to \texttt{start-jack.service}. Pri spúšťaní JACKu je nutné špecifikovať zvukovú kartu, je teda potrebné, aby bola zvuková karta pripojená pred zapnutím systému.
+
+\subsection{\texttt{jalv}}
+\texttt{jalv}\footnote{\url{https://gitlab.com/drobilla/jalv}} je \textit{audio plugin host}, teda aplikácia, ktorá umožňuje spustiť zvukový plugin ako samostatnú aplikáciu. \texttt{jalv} je jednoduchá aplikácia, spúšťa jeden plugin formátu \texttt{lv2} (open source štandard pre audio pluginy) a vystaví jeho I/O porty ako JACK porty. Beží interaktívne, a po spustení pluginu cez \texttt{jalv} je možné ho pomocou príkazov ovládať. Keďže chceme spustiť pluginy ako \texttt{systemd service} jednotky a chceme ich môcť následne aj ovládať, je nutné presmerovať vstup. Vytvoril som pomenovanú rúru \texttt{/tmp/jalv-nam-input}, ktorá slúži ako nový vstup pre \texttt{jalv} - Zapisovaním do rúry dostávame príkazy do \texttt{jalv}u. Výstup z \texttt{jalv}u vieme získať cez \texttt{journalctl}. Spúšťajú sa dve inštancie \texttt{jalv}u, pretože potrebujeme dva audio pluginy - \textit{Neural Amp Modeler} a \textit{Impulse Loader}.
+
+\subsection{Neural Amp Modeler}
+Neural Amp Modeler\footnote{\url{https://github.com/mikeoliphant/neural-amp-modeler-lv2}} je audio plugin, ktorý slúži ako simulátor zosilňovača. Spúšťa ho \texttt{start-nam.service}, ktorý najskôr čaká na spustenie JACKu, vytvorí pomenovanú rúru \texttt{/tmp/jalv-nam-input}, spustí Neural Amp Modeler prostredníctvom programu \texttt{jalv}, a nakoniec nastaví východzí preset.
+
+\subsection{Impulse Loader}
+Impulse Loader\footnote{\url{https://github.com/brummer10/ImpulseLoader}} je audio plugin, ktorý predstavuje simuláciu gitarového reproboxu. Jednotlivé reproboxy sú modelované ako impulzné odozvy. Spúšťanie Impulse Loaderu funguje rovnako, ako Neural Amp Modeler, stará sa o to \texttt{start-ir.service}.
+
+\subsection{Prepojenie JACK portov}
+\texttt{after-jalv.service} zabezpečuje prepojenie JACK portov navzájom. Najskôr čaká, kým budú všetky porty dostupné (t.j. Neural Amp Modeler a Impulse Loader bežia a ich porty sú odhalené systému), a následne vytvorí tieto prepoje:
+\begin{itemize}
+    \item \texttt{system:capture\_2 $\rightarrow$ Neural Amp Modeler:input}
+    \item \texttt{Neural Amp Modeler:output $\rightarrow$ Impulse Loader:input}
+    \item \texttt{Impulse Loader:output $\rightarrow$ system:playback\_1}
+    \item \texttt{Impulse Loader:output $\rightarrow$ system:playback\_2}
+\end{itemize}
+
+Takto dokážeme spracovať vstupný signál pomocou Neural Amp Modeleru, následne IR, a dostaneme sa na výstup.
+
+\subsection{MIDI prepínač}
+Posledná \texttt{systemd} jednotka, ktorá sa spúšťa, je \texttt{midi-footswitch.service}. Jej úlohou je spustiť obslužný skript \texttt{midi.py}, ktorý číta MIDI\footnote{\url{https://en.wikipedia.org/wiki/MIDI}} správy prichádzajúce z prepínača, a ovláda NAM a Impulse Loader zapisovaním do pomenovaných rúr. Taktiež má za úlohu odosielať MIDI SysEx\footnote{\url{https://en.wikipedia.org/wiki/MIDI\#System\_Exclusive\_messages}} správy do prepínača. Každá správa obsahuje názov aktuálne zvoleného presetu, a prepínač všetky príchodzie správy automaticky zobrazuje na displeji. 
+
+
+Systém má schopnosť reštartovať MIDI službu pri odpojení a pripojení MIDI prepínača, napr. nechceným vytiahnutím kábla. Táto funkcionalita je zabezpečená \texttt{udev} pravidlom, ktoré reštartuje \texttt{systemd} službu, ked je MIDI prepínač opätovne pripojený. Pravidlo je umiestnené v súbore \texttt{/etc/udev/rules.d/80-local.rules}.
+
+\section{Obsah archívu}
+\begin{itemize}
+    \item \texttt{.lv2/} - zložka obsahujúca jednotlivé presety/stavy pre NAM a Impulse Loader
+    \item \texttt{services/} - zložka obsahujúca \texttt{systemd} jednotky
+    \item \texttt{.jackdrc} - konfiguračný súbor obsahujúci príkaz na spustenie JACKu, spúšťaný službou \texttt{start-jack.service}
+    \item \texttt{80-local.rules} - definícia \texttt{udev} pravidla pre reštart služby pri opätovnom pripojení MIDI prepínača
+    \item \texttt{midi.py} - skript na obsluhu MIDI prepínača
+    \item \texttt{post-jalv.sh} - skript spúšťaný službou \texttt{after-jalv.service}: zabezpečuje prepojenie JACK portov
+    \item \texttt{start-ir.sh} - skript spúšťaný službou \texttt{start-ir.service}: spúšťa Impulse Loader
+    \item \texttt{start-nam.sh} - skript spúšťaný službou \texttt{start-nam.service}: spúšťa NAM
+\end{itemize}
+
+
+\end{document}
