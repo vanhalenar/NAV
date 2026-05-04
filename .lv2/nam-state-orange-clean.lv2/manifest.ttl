@@ -3,8 +3,8 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix state: <http://lv2plug.in/ns/ext/state#> .
 
-<urn:nam:default-state>
+<urn:nam:orange-clean>
     a pset:Preset ;
     lv2:appliesTo <http://github.com/mikeoliphant/neural-amp-modeler-lv2> ;
-    rdfs:label "Default" ;
+    rdfs:label "Orange Clean" ;
     rdfs:seeAlso <state.ttl> .

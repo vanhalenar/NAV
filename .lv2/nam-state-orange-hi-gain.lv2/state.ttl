@@ -2,9 +2,9 @@
 @prefix pset:  <http://lv2plug.in/ns/ext/presets#> .
 @prefix state: <http://lv2plug.in/ns/ext/state#> .
 
-<urn:brummer:impulseloader-default-state>
+<urn:nam:orange-hi-gain>
     a pset:Preset ;
     state:state [
-        <urn:brummer:ImpulseLoader#irfile>
-            <file:///home/tymo/cabs/IR-SM57-V30-4-Raw.wav>
+        <http://github.com/mikeoliphant/neural-amp-modeler-lv2#model>
+            <file:///home/tymo/nam-models/OR50-V9-PUNCH-8-T6-M4-B5-GAIN-8.nam>
     ] .

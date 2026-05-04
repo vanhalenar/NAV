@@ -3,8 +3,8 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix state: <http://lv2plug.in/ns/ext/state#> .
 
-<urn:nam:mesa>
+<urn:nam:marshall-clean>
     a pset:Preset ;
     lv2:appliesTo <http://github.com/mikeoliphant/neural-amp-modeler-lv2> ;
-    rdfs:label "Mesa" ;
+    rdfs:label "Marshall Clean" ;
     rdfs:seeAlso <state.ttl> .

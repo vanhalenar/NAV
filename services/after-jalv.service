@@ -1,7 +1,6 @@
 [Unit]
 Description=After NAM and IR have started, this will be launched
-After=start-nam.service
-After=start-ir.service
+Wants=start-nam.servide start-ir.service
 
 [Service]
 Type=simple

@@ -1,6 +1,6 @@
 [Unit]
 Description=Start NAM after jack has started
-After=start-jack.service
+Wants=start-jack.service
 
 [Service]
 Type=simple
@@ -8,6 +8,7 @@ User=tymo
 Group=audio
 CapabilityBoundingSet=CAP_SYS_NICE
 AmbientCapabilities=CAP_SYS_NICE
+ExecStartPre=/bin/sh -c 'until jack_wait -w -t 1; do sleep 1; done'
 ExecStart=/home/tymo/start-nam.sh
 Restart=on-failure
 

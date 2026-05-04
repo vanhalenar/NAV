@@ -2,7 +2,7 @@
 @prefix pset: <http://lv2plug.in/ns/ext/presets#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-<urn:brummer:impulseloader-default-state>
+<urn:brummer:impulseloader-state-mesa>
     a pset:Preset ;
     lv2:appliesTo <urn:brummer:ImpulseLoader> ;
     rdfs:label "Default" ;
